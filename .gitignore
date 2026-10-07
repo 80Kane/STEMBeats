@@ -1,6 +1,6 @@
-backend/stems/  
-backend/uploads/  
-*.wav  
-*.mp3  
-__pycache__/  
+backend/stems/ 
+backend/uploads/ 
+*.wav 
+*.mp3 
+__pycache__/ 
 *.pyc 
