@@ -23,7 +23,7 @@ class StemSeparator:
         # Run: python -m demucs -n htdemucs --out output_dir input_path
         cmd = [
             sys.executable, '-m', 'demucs',
-            '-n', 'htdemucs',
+            '-n', 'htdemucs_6s',
             '--out', output_dir,
             input_path
         ]
