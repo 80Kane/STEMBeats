@@ -1,1596 +1,335 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
-    <title>STEMBeats</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        base: { 900: '#0d0d14', 800: '#12121f', 700: '#1a1a2e', 600: '#222240', 500: '#2a2a4a', 400: '#363660' },
-                        surface: { 100: '#1a1a2e', 200: '#222240', 300: '#2a2a4a', 400: '#333360' },
-                        txt: { 100: '#ffffff', 200: '#e8e8f0', 300: '#b0b0c8', 400: '#7a7a9a', 500: '#55556e' },
-                        drums: { DEFAULT: '#ff4d4d', light: '#ff8080', dark: '#cc3333', glow: 'rgba(255,77,77,0.25)', bg: 'rgba(255,77,77,0.08)' },
-                        bass: { DEFAULT: '#4d94ff', light: '#80b3ff', dark: '#3370cc', glow: 'rgba(77,148,255,0.25)', bg: 'rgba(77,148,255,0.08)' },
-                        piano: { DEFAULT: '#b34dff', light: '#cc80ff', dark: '#8a33cc', glow: 'rgba(179,77,255,0.25)', bg: 'rgba(179,77,255,0.08)' },
-                        vocals: { DEFAULT: '#4dff91', light: '#80ffb3', dark: '#33cc6e', glow: 'rgba(77,255,145,0.25)', bg: 'rgba(77,255,145,0.08)' },
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    borderRadius: {
-                        '2xl': '1rem',
-                        '3xl': '1.25rem',
-                        '4xl': '1.5rem',
-                    }
-                }
-            }
-        };
-    </script>
-    <script src="https://unpkg.com/lucide@latest" defer></script>
-    <style>
-        * { box-sizing: border-box; }
-        body { background: #0d0d14; color: #e8e8f0; font-family: 'Inter', sans-serif; margin: 0; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #12121f; }
-        ::-webkit-scrollbar-thumb { background: #363660; border-radius: 3px; }
-
-        .glass-card {
-            background: rgba(26, 26, 46, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 1.25rem;
-            transition: box-shadow 0.3s ease, transform 0.3s ease;
-        }
-        .glass-card:hover {
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 20px rgba(179,77,255,0.06);
-        }
-
-        .waveform-bar {
-            display: inline-block;
-            width: 3px;
-            border-radius: 2px;
-            transition: opacity 0.3s ease, height 0.1s ease;
-            min-height: 4px;
-        }
-        .waveform-container.playing .waveform-bar {
-            animation: wavePulse 0.6s ease-in-out infinite alternate;
-        }
-        .waveform-container.muted .waveform-bar {
-            opacity: 0.15 !important;
-            animation: none !important;
-            height: 6px !important;
-        }
-
-        @keyframes wavePulse {
-            0% { transform: scaleY(0.3); }
-            100% { transform: scaleY(1); }
-        }
-
-        .processing-ring {
-            border: 3px solid rgba(255,255,255,0.05);
-            border-top-color: #b34dff;
-            border-right-color: #4d94ff;
-            border-radius: 50%;
-            animation: spin 1.2s linear infinite;
-        }
-        .processing-ring-inner {
-            border: 3px solid rgba(255,255,255,0.05);
-            border-bottom-color: #ff4d4d;
-            border-left-color: #4dff91;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite reverse;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .progress-fill { transition: width 0.3s linear; }
-
-        .upload-zone {
-            border: 2px dashed rgba(255,255,255,0.12);
-            transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
-        }
-        .upload-zone:hover, .upload-zone.dragover {
-            border-color: rgba(179,77,255,0.5);
-            background: rgba(179,77,255,0.04);
-            box-shadow: 0 0 40px rgba(179,77,255,0.08);
-        }
-
-        .stem-card { transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.3s ease; }
-        .stem-card:hover { transform: translateY(-2px); }
-        .stem-card.dimmed { opacity: 0.3; }
-        .stem-card.dimmed .waveform-bar { animation: none !important; }
-
-        .fade-up {
-            opacity: 0; transform: translateY(30px);
-            animation: fadeUp 0.6s ease forwards;
-        }
-        @keyframes fadeUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 4px;
-            border-radius: 2px;
-            background: rgba(255,255,255,0.1);
-            outline: none;
-            cursor: pointer;
-            transition: opacity 0.3s ease;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px; height: 14px;
-            border-radius: 50%;
-            background: #e8e8f0;
-            border: 2px solid rgba(255,255,255,0.3);
-            cursor: pointer;
-            transition: transform 0.15s ease;
-        }
-        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
-        input[type="range"]::-moz-range-thumb {
-            width: 14px; height: 14px;
-            border-radius: 50%;
-            background: #e8e8f0;
-            border: 2px solid rgba(255,255,255,0.3);
-            cursor: pointer;
-        }
-
-        .drums-slider::-webkit-slider-thumb { background: #ff4d4d; border-color: #ff8080; }
-        .bass-slider::-webkit-slider-thumb { background: #4d94ff; border-color: #80b3ff; }
-        .piano-slider::-webkit-slider-thumb { background: #b34dff; border-color: #cc80ff; }
-        .vocals-slider::-webkit-slider-thumb { background: #4dff91; border-color: #80ffb3; }
-
-        .sidebar { transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s; }
-        .sidebar.collapsed { transform: translateX(100%); opacity: 0; pointer-events: none; }
-
-        .ctrl-btn {
-            transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-        }
-        .ctrl-btn:hover { background: rgba(255,255,255,0.08); transform: scale(1.05); }
-        .ctrl-btn.active { background: rgba(255,255,255,0.12); }
-
-        .master-bar {
-            background: rgba(18,18,31,0.92);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-top: 1px solid rgba(255,255,255,0.06);
-        }
-
-        .seekbar {
-            height: 3px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 2px;
-            cursor: pointer;
-            position: relative;
-            transition: height 0.2s ease;
-        }
-        .seekbar-fill {
-            height: 100%;
-            border-radius: 2px;
-            transition: width 0.3s linear;
-        }
-        .seekbar:hover { height: 5px; }
-
-        .glow-drums { box-shadow: 0 0 30px rgba(255,77,77,0.12), inset 0 1px 0 rgba(255,77,77,0.1); }
-        .glow-bass { box-shadow: 0 0 30px rgba(77,148,255,0.12), inset 0 1px 0 rgba(77,148,255,0.1); }
-        .glow-piano { box-shadow: 0 0 30px rgba(179,77,255,0.12), inset 0 1px 0 rgba(179,77,255,0.1); }
-        .glow-vocals { box-shadow: 0 0 30px rgba(77,255,145,0.12), inset 0 1px 0 rgba(77,255,145,0.1); }
-
-        /* VU Meter */
-        .vu-meter {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            position: relative;
-            flex-shrink: 0;
-        }
-        .vu-meter svg { width: 100%; height: 100%; }
-        .vu-meter-ring {
-            fill: none;
-            stroke-width: 3;
-            stroke-linecap: round;
-            transition: stroke-dashoffset 0.15s ease;
-        }
-        .vu-meter-bg {
-            fill: none;
-            stroke: rgba(255,255,255,0.06);
-            stroke-width: 3;
-        }
-
-        /* EQ vertical sliders */
-        .eq-slider-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-        .eq-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            writing-mode: vertical-lr;
-            direction: rtl;
-            width: 4px;
-            height: 100px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 2px;
-            outline: none;
-            cursor: pointer;
-        }
-        .eq-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px; height: 16px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.3);
-            cursor: pointer;
-            transition: transform 0.15s ease, box-shadow 0.2s ease;
-        }
-        .eq-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
-        .eq-slider::-moz-range-thumb {
-            width: 16px; height: 16px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.3);
-            cursor: pointer;
-        }
-
-        /* FX panel */
-        .fx-toggle-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
-        }
-        .fx-toggle-dot.on {
-            background: #4dff91;
-            box-shadow: 0 0 8px rgba(77,255,145,0.5);
-        }
-        .fx-toggle-dot.off {
-            background: #55556e;
-            box-shadow: none;
-        }
-
-        .fx-card {
-            background: rgba(18,18,31,0.7);
-            border: 1px solid rgba(77,255,145,0.08);
-            border-radius: 0.75rem;
-            padding: 12px 14px;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .fx-card:hover {
-            border-color: rgba(77,255,145,0.15);
-            box-shadow: 0 0 16px rgba(77,255,145,0.04);
-        }
-
-        /* Collapsible panel */
-        .panel-body { overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; }
-        .panel-body.collapsed { max-height: 0 !important; opacity: 0; }
-
-        /* EQ preset buttons */
-        .eq-preset-btn {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 0.5rem;
-            padding: 6px 12px;
-            font-size: 11px;
-            font-weight: 600;
-            color: #b0b0c8;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .eq-preset-btn:hover {
-            background: rgba(179,77,255,0.12);
-            border-color: rgba(179,77,255,0.3);
-            color: #e8e8f0;
-        }
-        .eq-preset-btn.active {
-            background: rgba(179,77,255,0.2);
-            border-color: rgba(179,77,255,0.5);
-            color: #cc80ff;
-        }
-
-        /* Keyboard shortcut tooltip */
-        .shortcut-tooltip {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(-8px);
-            background: rgba(18,18,31,0.95);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 0.75rem;
-            padding: 12px 16px;
-            font-size: 11px;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            z-index: 100;
-            backdrop-filter: blur(12px);
-        }
-        .shortcut-tooltip.visible {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateX(-50%) translateY(-12px);
-        }
-
-        /* BPM tap */
-        .bpm-flash {
-            animation: bpmPulse 0.15s ease;
-        }
-        @keyframes bpmPulse {
-            0% { box-shadow: 0 0 0 0 rgba(179,77,255,0.6); }
-            100% { box-shadow: 0 0 16px 4px rgba(179,77,255,0); }
-        }
-
-        /* Frequency visualizer canvas */
-        #freq-visualizer-canvas {
-            display: block;
-            width: 100%;
-            height: 48px;
-            border-radius: 8px;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; right: 0; top: 0; bottom: 72px; z-index: 40; width: 300px; }
-            .eq-slider { height: 70px; }
-        }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>STEMBeats</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d14;color:#e8e8f0;font-family:'Inter',sans-serif;min-height:100vh}
+.glass{background:rgba(26,26,46,0.7);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.07);border-radius:1.25rem}
+.btn-primary{background:linear-gradient(135deg,#b34dff,#7b2fff);color:#fff;border:none;border-radius:.75rem;padding:.75rem 2rem;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-primary:hover{opacity:.85}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.upload-zone{border:2px dashed rgba(179,77,255,0.4);border-radius:1.25rem;padding:3rem;text-align:center;cursor:pointer;transition:border-color .3s,background .3s;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:#b34dff;background:rgba(179,77,255,0.06)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.stem-card{border-radius:1.25rem;padding:1.5rem}
+.stem-drums{background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.2)}
+.stem-bass{background:rgba(77,148,255,0.08);border:1px solid rgba(77,148,255,0.2)}
+.stem-piano{background:rgba(179,77,255,0.08);border:1px solid rgba(179,77,255,0.2)}
+.stem-vocals{background:rgba(77,255,145,0.08);border:1px solid rgba(77,255,145,0.2)}
+.progress-bar{height:6px;background:#1a1a2e;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#b34dff,#7b2fff);border-radius:3px;transition:width .4s ease}
+.badge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .8rem;border-radius:999px;font-size:.75rem;font-weight:600}
+.badge-connected{background:rgba(77,255,145,0.15);color:#4dff91;border:1px solid rgba(77,255,145,0.3)}
+.badge-demo{background:rgba(255,200,77,0.15);color:#ffc84d;border:1px solid rgba(255,200,77,0.3)}
+audio{width:100%;margin-top:.75rem;border-radius:.5rem;outline:none}
+audio::-webkit-media-controls-panel{background:#1a1a2e}
+.hidden{display:none}
+.spinner{width:20px;height:20px;border:2px solid rgba(179,77,255,0.3);border-top-color:#b34dff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head>
-<body data-id="0" class="min-h-screen flex flex-col">
-    <app-icon data-id="1" hidden data-icon="audio-lines" data-palette="Dark"></app-icon>
+<body class="p-6">
 
-    <!-- Header -->
-    <header data-id="2" id="header-nav-k8x2" class="sticky top-0 z-50 px-4 md:px-8 py-4" style="background:rgba(13,13,20,0.88);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.04);">
-        <div data-id="3" class="max-w-screen-2xl mx-auto flex items-center justify-between">
-            <div data-id="4" class="flex items-center gap-3">
-                <div data-id="5" class="flex items-center gap-2">
-                    <div data-id="6" class="flex items-end gap-[2px] h-7">
-                        <span data-id="7" style="width:3px;height:40%;background:#ff4d4d;border-radius:1px;display:inline-block;"></span>
-                        <span data-id="8" style="width:3px;height:70%;background:#4d94ff;border-radius:1px;display:inline-block;"></span>
-                        <span data-id="9" style="width:3px;height:100%;background:#b34dff;border-radius:1px;display:inline-block;"></span>
-                        <span data-id="10" style="width:3px;height:55%;background:#4dff91;border-radius:1px;display:inline-block;"></span>
-                        <span data-id="11" style="width:3px;height:80%;background:#ff4d4d;border-radius:1px;display:inline-block;"></span>
-                        <span data-id="12" style="width:3px;height:45%;background:#4d94ff;border-radius:1px;display:inline-block;"></span>
-                    </div>
-                    <h1 data-id="13" class="text-xl md:text-2xl font-extrabold text-white tracking-tight">STEM<span data-id="14" style="color:#b34dff">Beats</span></h1>
-                </div>
-                <span data-id="15" class="hidden sm:inline text-xs text-txt-400 tracking-widest uppercase ml-2 mt-1">Separate · Isolate · Create</span>
-            </div>
-            <div data-id="16" class="flex items-center gap-3">
-                <button data-id="17" id="sidebar-toggle-m4r1" class="ctrl-btn p-2 rounded-xl text-txt-300 md:hidden">
-                    <i data-id="18" data-lucide="panel-right" class="w-5 h-5"></i>
-                </button>
-                <button data-id="19" id="upload-cta-h3k7" class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-purple-900/30">
-                    <i data-id="20" data-lucide="upload" class="w-4 h-4"></i>
-                    <span data-id="21" class="hidden sm:inline">Upload Track</span>
-                </button>
-            </div>
-        </div>
-    </header>
+<!-- Header -->
+<header class="flex items-center justify-between mb-8 max-w-4xl mx-auto">
+  <div>
+    <h1 class="text-2xl font-bold text-white">🎵 STEMBeats</h1>
+    <p class="text-sm" style="color:#7a7a9a">AI Stem Separator</p>
+  </div>
+  <span id="badge" class="badge badge-demo">🟡 Checking backend...</span>
+</header>
 
-    <!-- Main Content Area -->
-    <div data-id="22" class="flex-1 flex max-w-screen-2xl mx-auto w-full">
-        <!-- Main Column -->
-        <main data-id="23" class="flex-1 px-4 md:px-8 py-6 pb-28">
+<main class="max-w-4xl mx-auto space-y-6">
 
-            <!-- Upload Zone -->
-            <section data-id="24" id="upload-zone-w9p3" class="max-w-2xl mx-auto">
-                <div data-id="25" id="upload-dropzone-a1b2" class="upload-zone rounded-3xl p-8 md:p-14 flex flex-col items-center justify-center text-center cursor-pointer min-h-[280px]">
-                    <div data-id="26" class="mb-5 relative">
-                        <div data-id="27" class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background:rgba(179,77,255,0.1);">
-                            <i data-id="28" data-lucide="music" class="w-8 h-8 text-piano"></i>
-                        </div>
-                    </div>
-                    <h2 data-id="29" class="text-lg md:text-xl font-semibold text-txt-200 mb-2">Drag & drop your audio file here</h2>
-                    <p data-id="30" class="text-sm text-txt-400 mb-6">Supports MP3, WAV, FLAC, AAC</p>
-                    <button data-id="31" id="browse-btn-c3d4" class="flex items-center gap-2 bg-surface-300 hover:bg-surface-400 text-txt-200 text-sm font-medium px-6 py-2.5 rounded-xl transition-all">
-                        <i data-id="32" data-lucide="folder-open" class="w-4 h-4"></i>
-                        Browse Files
-                    </button>
-                </div>
-            </section>
+  <!-- Upload Card -->
+  <div class="glass p-6">
+    <h2 class="text-lg font-semibold mb-4 text-white">Upload Audio</h2>
 
-            <!-- Processing State (hidden initially) -->
-            <section data-id="33" id="processing-state-e5f6" class="hidden max-w-md mx-auto text-center py-12">
-                <div data-id="34" class="flex items-center justify-center mb-8">
-                    <div data-id="35" class="processing-ring w-24 h-24 flex items-center justify-center">
-                        <div data-id="36" class="processing-ring-inner w-16 h-16"></div>
-                    </div>
-                </div>
-                <p data-id="37" id="processing-text-g7h8" class="text-lg font-semibold text-txt-200 mb-4">Analyzing audio...</p>
-                <div data-id="38" class="w-full max-w-xs mx-auto h-1.5 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06);">
-                    <div data-id="39" id="processing-bar-i9j0" class="h-full rounded-full bg-gradient-to-r from-drums via-piano to-vocals" style="width:0%;transition:width 0.4s ease;"></div>
-                </div>
-                <p data-id="40" class="text-xs text-txt-500 mt-3 tabular-nums" id="processing-pct-k1l2">0%</p>
-            </section>
-
-            <!-- Stem Tracks (hidden initially) -->
-            <section data-id="41" id="stems-section-m3n4" class="hidden">
-                <div data-id="42" class="flex items-center justify-between mb-6">
-                    <div data-id="43">
-                        <h2 data-id="44" class="text-xl font-bold text-white">Stem Tracks</h2>
-                        <p data-id="45" class="text-sm text-txt-400 mt-0.5">4 stems separated · <span data-id="46" id="track-name-display-o5p6" class="text-txt-300">my_track.mp3</span></p>
-                    </div>
-                    <button data-id="47" id="sidebar-toggle-desktop-q7r8" class="hidden md:flex ctrl-btn items-center gap-2 text-txt-300 text-sm px-3 py-2 rounded-xl">
-                        <i data-id="48" data-lucide="panel-right" class="w-4 h-4"></i>
-                        Mix Panel
-                    </button>
-                </div>
-                <div data-id="49" class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5" id="stems-grid-s9t0">
-                    <!-- Drum Track -->
-                    <div data-id="50" class="stem-card glass-card glow-drums fade-up" data-stem="drums" style="animation-delay:0s;">
-                        <div data-id="51" class="px-5 py-3 flex items-center gap-3 rounded-t-3xl" style="background:rgba(255,77,77,0.08);border-bottom:1px solid rgba(255,77,77,0.1);">
-                            <div data-id="52" class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(255,77,77,0.15);">
-                                <i data-id="53" data-lucide="drum" class="w-4 h-4 text-drums"></i>
-                            </div>
-                            <span data-id="54" class="text-sm font-semibold text-drums-light">Drums</span>
-                        </div>
-                        <div data-id="55" class="p-5">
-                            <div data-id="56" class="flex items-center gap-3 mb-4">
-                                <div data-id="57" class="vu-meter" data-stem="drums">
-                                    <svg data-id="58" viewBox="0 0 36 36"><circle data-id="59" class="vu-meter-bg" cx="18" cy="18" r="15.5"/><circle data-id="60" class="vu-meter-ring" cx="18" cy="18" r="15.5" stroke="#ff4d4d" stroke-dasharray="97.4" stroke-dashoffset="97.4" transform="rotate(-90 18 18)" data-stem="drums"/></svg>
-                                </div>
-                                <div data-id="61" class="waveform-container h-16 flex-1 flex items-center justify-center gap-[2px]" data-stem="drums"></div>
-                            </div>
-                            <div data-id="62" class="seekbar mb-3" data-stem="drums">
-                                <div data-id="63" class="seekbar-fill bg-drums" style="width:0%;" data-stem="drums"></div>
-                            </div>
-                            <div data-id="64" class="flex items-center justify-between text-xs text-txt-400 mb-3 tabular-nums">
-                                <span data-id="65" class="stem-time" data-stem="drums">0:00</span>
-                                <span data-id="66">3:42</span>
-                            </div>
-                            <div data-id="67" class="flex items-center gap-2 flex-wrap">
-                                <button data-id="68" class="ctrl-btn play-btn p-2 rounded-lg text-txt-300" data-stem="drums" title="Play/Pause">
-                                    <i data-id="69" data-lucide="play" class="w-4 h-4"></i>
-                                </button>
-                                <button data-id="70" class="ctrl-btn mute-btn p-2 rounded-lg text-txt-300" data-stem="drums" title="Mute">
-                                    <i data-id="71" data-lucide="volume-2" class="w-4 h-4"></i>
-                                </button>
-                                <button data-id="72" class="ctrl-btn solo-btn p-2 rounded-lg text-txt-300" data-stem="drums" title="Solo">
-                                    <i data-id="73" data-lucide="headphones" class="w-4 h-4"></i>
-                                </button>
-                                <input data-id="74" type="range" class="flex-1 min-w-[60px] drums-slider stem-volume" data-stem="drums" min="0" max="100" value="80" />
-                                <button data-id="75" class="ctrl-btn p-2 rounded-lg text-txt-400" title="Download Stem">
-                                    <i data-id="76" data-lucide="download" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bass Track -->
-                    <div data-id="77" class="stem-card glass-card glow-bass fade-up" data-stem="bass" style="animation-delay:0.12s;">
-                        <div data-id="78" class="px-5 py-3 flex items-center gap-3 rounded-t-3xl" style="background:rgba(77,148,255,0.08);border-bottom:1px solid rgba(77,148,255,0.1);">
-                            <div data-id="79" class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(77,148,255,0.15);">
-                                <i data-id="80" data-lucide="guitar" class="w-4 h-4 text-bass"></i>
-                            </div>
-                            <span data-id="81" class="text-sm font-semibold text-bass-light">Bass</span>
-                        </div>
-                        <div data-id="82" class="p-5">
-                            <div data-id="83" class="flex items-center gap-3 mb-4">
-                                <div data-id="84" class="vu-meter" data-stem="bass">
-                                    <svg data-id="85" viewBox="0 0 36 36"><circle data-id="86" class="vu-meter-bg" cx="18" cy="18" r="15.5"/><circle data-id="87" class="vu-meter-ring" cx="18" cy="18" r="15.5" stroke="#4d94ff" stroke-dasharray="97.4" stroke-dashoffset="97.4" transform="rotate(-90 18 18)" data-stem="bass"/></svg>
-                                </div>
-                                <div data-id="88" class="waveform-container h-16 flex-1 flex items-center justify-center gap-[2px]" data-stem="bass"></div>
-                            </div>
-                            <div data-id="89" class="seekbar mb-3" data-stem="bass">
-                                <div data-id="90" class="seekbar-fill bg-bass" style="width:0%;" data-stem="bass"></div>
-                            </div>
-                            <div data-id="91" class="flex items-center justify-between text-xs text-txt-400 mb-3 tabular-nums">
-                                <span data-id="92" class="stem-time" data-stem="bass">0:00</span>
-                                <span data-id="93">3:42</span>
-                            </div>
-                            <div data-id="94" class="flex items-center gap-2 flex-wrap">
-                                <button data-id="95" class="ctrl-btn play-btn p-2 rounded-lg text-txt-300" data-stem="bass" title="Play/Pause">
-                                    <i data-id="96" data-lucide="play" class="w-4 h-4"></i>
-                                </button>
-                                <button data-id="97" class="ctrl-btn mute-btn p-2 rounded-lg text-txt-300" data-stem="bass" title="Mute">
-                                    <i data-id="98" data-lucide="volume-2" class="w-4 h-4"></i>
-                                </button>
-                                <button data-id="99" class="ctrl-btn solo-btn p-2 rounded-lg text-txt-300" data-stem="bass" title="Solo">
-                                    <i data-id="100" data-lucide="headphones" class="w-4 h-4"></i>
-                                </button>
-                                <input data-id="101" type="range" class="flex-1 min-w-[60px] bass-slider stem-volume" data-stem="bass" min="0" max="100" value="80" />
-                                <button data-id="102" class="ctrl-btn p-2 rounded-lg text-txt-400" title="Download Stem">
-                                    <i data-id="103" data-lucide="download" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Piano Track -->
-                    <div data-id="104" class="stem-card glass-card glow-piano fade-up" data-stem="piano" style="animation-delay:0.24s;">
-                        <div data-id="105" class="px-5 py-3 flex items-center gap-3 rounded-t-3xl" style="background:rgba(179,77,255,0.08);border-bottom:1px solid rgba(179,77,255,0.1);">
-                            <div data-id="106" class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(179,77,255,0.15);">
-                                <i data-id="107" data-lucide="piano" class="w-4 h-4 text-piano"></i>
-                            </div>
-                            <span data-id="108" class="text-sm font-semibold text-piano-light">Piano</span>
-                        </div>
-                        <div data-id="109" class="p-5">
-                            <div data-id="110" class="flex items-center gap-3 mb-4">
-                                <div data-id="111" class="vu-meter" data-stem="piano">
-                                    <svg data-id="112" viewBox="0 0 36 36"><circle data-id="113" class="vu-meter-bg" cx="18" cy="18" r="15.5"/><circle data-id="114" class="vu-meter-ring" cx="18" cy="18" r="15.5" stroke="#b34dff" stroke-dasharray="97.4" stroke-dashoffset="97.4" transform="rotate(-90 18 18)" data-stem="piano"/></svg>
-                                </div>
-                                <div data-id="115" class="waveform-container h-16 flex-1 flex items-center justify-center gap-[2px]" data-stem="piano"></div>
-                            </div>
-                            <div data-id="116" class="seekbar mb-3" data-stem="piano">
-                                <div data-id="117" class="seekbar-fill bg-piano" style="width:0%;" data-stem="piano"></div>
-                            </div>
-                            <div data-id="118" class="flex items-center justify-between text-xs text-txt-400 mb-3 tabular-nums">
-                                <span data-id="119" class="stem-time" data-stem="piano">0:00</span>
-                                <span data-id="120">3:42</span>
-                            </div>
-                            <div data-id="121" class="flex items-center gap-2 flex-wrap">
-                                <button data-id="122" class="ctrl-btn play-btn p-2 rounded-lg text-txt-300" data-stem="piano" title="Play/Pause">
-                                    <i data-id="123" data-lucide="play" class="w-4 h-4"></i>
-                                </button>
-                                <button data-id="124" class="ctrl-btn mute-btn p-2 rounded-lg text-txt-300" data-stem="piano" title="Mute">
-                                    <i data-id="125" data-lucide="volume-2" class="w-4 h-4"></i>
-                                </button>
-                                <button data-id="126" class="ctrl-btn solo-btn p-2 rounded-lg text-txt-300" data-stem="piano" title="Solo">
-                                    <i data-id="127" data-lucide="headphones" class="w-4 h-4"></i>
-                                </button>
-                                <input data-id="128" type="range" class="flex-1 min-w-[60px] piano-slider stem-volume" data-stem="piano" min="0" max="100" value="80" />
-                                <button data-id="129" class="ctrl-btn p-2 rounded-lg text-txt-400" title="Download Stem">
-                                    <i data-id="130" data-lucide="download" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Vocals Track -->
-                    <div data-id="131" class="stem-card glass-card glow-vocals fade-up" data-stem="vocals" style="animation-delay:0.36s;">
-                        <div data-id="132" class="px-5 py-3 flex items-center gap-3 rounded-t-3xl" style="background:rgba(77,255,145,0.08);border-bottom:1px solid rgba(77,255,145,0.1);">
-                            <div data-id="133" class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(77,255,145,0.15);">
-                                <i data-id="134" data-lucide="mic" class="w-4 h-4 text-vocals"></i>
-                            </div>
-                            <span data-id="135" class="text-sm font-semibold text-vocals-light">Vocals</span>
-                        </div>
-                        <div data-id="136" class="p-5">
-                            <div data-id="137" class="flex items-center gap-3 mb-4">
-                                <div data-id="138" class="vu-meter" data-stem="vocals">
-                                    <svg data-id="139" viewBox="0 0 36 36"><circle data-id="140" class="vu-meter-bg" cx="18" cy="18" r="15.5"/><circle data-id="141" class="vu-meter-ring" cx="18" cy="18" r="15.5" stroke="#4dff91" stroke-dasharray="97.4" stroke-dashoffset="97.4" transform="rotate(-90 18 18)" data-stem="vocals"/></svg>
-                                </div>
-                                <div data-id="142" class="waveform-container h-16 flex-1 flex items-center justify-center gap-[2px]" data-stem="vocals"></div>
-                            </div>
-                            <div data-id="143" class="seekbar mb-3" data-stem="vocals">
-                                <div data-id="144" class="seekbar-fill bg-vocals" style="width:0%;" data-stem="vocals"></div>
-                            </div>
-                            <div data-id="145" class="flex items-center justify-between text-xs text-txt-400 mb-3 tabular-nums">
-                                <span data-id="146" class="stem-time" data-stem="vocals">0:00</span>
-                                <span data-id="147">3:42</span>
-                            </div>
-                            <div data-id="148" class="flex items-center gap-2 flex-wrap">
-                                <button data-id="149" class="ctrl-btn play-btn p-2 rounded-lg text-txt-300" data-stem="vocals" title="Play/Pause">
-                                    <i data-id="150" data-lucide="play" class="w-4 h-4"></i>
-                                </button>
-                                <button data-id="151" class="ctrl-btn mute-btn p-2 rounded-lg text-txt-300" data-stem="vocals" title="Mute">
-                                    <i data-id="152" data-lucide="volume-2" class="w-4 h-4"></i>
-                                </button>
-                                <button data-id="153" class="ctrl-btn solo-btn p-2 rounded-lg text-txt-300" data-stem="vocals" title="Solo">
-                                    <i data-id="154" data-lucide="headphones" class="w-4 h-4"></i>
-                                </button>
-                                <input data-id="155" type="range" class="flex-1 min-w-[60px] vocals-slider stem-volume" data-stem="vocals" min="0" max="100" value="80" />
-                                <button data-id="156" class="ctrl-btn p-2 rounded-lg text-txt-400" title="Download Stem">
-                                    <i data-id="157" data-lucide="download" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- EQ + FX Row -->
-                <div data-id="158" class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 mt-6">
-
-                    <!-- 10-Band EQ Panel -->
-                    <div data-id="159" class="glass-card fade-up" style="animation-delay:0.48s;">
-                        <div data-id="160" class="px-5 py-3 flex items-center justify-between rounded-t-3xl" style="background:rgba(179,77,255,0.05);border-bottom:1px solid rgba(255,255,255,0.06);">
-                            <div data-id="161" class="flex items-center gap-2">
-                                <i data-id="162" data-lucide="sliders-horizontal" class="w-4 h-4 text-piano"></i>
-                                <span data-id="163" class="text-sm font-semibold text-txt-200">Master EQ</span>
-                            </div>
-                            <button data-id="164" id="eq-toggle-btn-f7g8" class="ctrl-btn p-1.5 rounded-lg text-txt-400" title="Toggle EQ">
-                                <i data-id="165" data-lucide="chevron-up" class="w-4 h-4" id="eq-toggle-icon-h9i0"></i>
-                            </button>
-                        </div>
-                        <div data-id="166" id="eq-body-j1k2" class="panel-body p-5" style="max-height:400px;">
-                            <!-- Preset buttons -->
-                            <div data-id="167" class="flex flex-wrap gap-2 mb-5">
-                                <button data-id="168" class="eq-preset-btn active" data-preset="flat">Flat</button>
-                                <button data-id="169" class="eq-preset-btn" data-preset="bass-boost">Bass Boost</button>
-                                <button data-id="170" class="eq-preset-btn" data-preset="vocal-enhance">Vocal Enhance</button>
-                                <button data-id="171" class="eq-preset-btn" data-preset="treble-boost">Treble Boost</button>
-                            </div>
-                            <!-- EQ Sliders -->
-                            <div data-id="172" class="flex items-end justify-between gap-1 md:gap-2">
-                                <!-- Generated via JS -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- FX Chain Panel -->
-                    <div data-id="173" class="glass-card fade-up" style="animation-delay:0.56s;">
-                        <div data-id="174" class="px-5 py-3 flex items-center justify-between rounded-t-3xl" style="background:rgba(77,255,145,0.05);border-bottom:1px solid rgba(255,255,255,0.06);">
-                            <div data-id="175" class="flex items-center gap-2">
-                                <i data-id="176" data-lucide="zap" class="w-4 h-4 text-vocals"></i>
-                                <span data-id="177" class="text-sm font-semibold text-txt-200">FX Chain</span>
-                            </div>
-                            <button data-id="178" id="fx-toggle-btn-t1u2" class="ctrl-btn p-1.5 rounded-lg text-txt-400" title="Toggle FX">
-                                <i data-id="179" data-lucide="chevron-up" class="w-4 h-4" id="fx-toggle-icon-v3w4"></i>
-                            </button>
-                        </div>
-                        <div data-id="180" id="fx-body-x5y6" class="panel-body p-5 space-y-3" style="max-height:500px;">
-                            <!-- Reverb -->
-                            <div data-id="181" class="fx-card" data-fx="reverb">
-                                <div data-id="182" class="flex items-center justify-between mb-2">
-                                    <div data-id="183" class="flex items-center gap-2">
-                                        <div data-id="184" class="fx-toggle-dot off" data-fx="reverb"></div>
-                                        <span data-id="185" class="text-xs font-semibold text-txt-200 uppercase tracking-wider">Reverb</span>
-                                    </div>
-                                    <button data-id="186" class="fx-power-btn ctrl-btn p-1 rounded text-txt-400 text-xs" data-fx="reverb">
-                                        <i data-id="187" data-lucide="power" class="w-3.5 h-3.5"></i>
-                                    </button>
-                                </div>
-                                <div data-id="188" class="flex items-center gap-3">
-                                    <span data-id="189" class="text-[10px] text-txt-500 w-12">Wet/Dry</span>
-                                    <input data-id="190" type="range" class="flex-1 fx-slider" data-fx="reverb" data-param="wetdry" min="0" max="100" value="30" />
-                                    <span data-id="191" class="text-[10px] text-txt-400 tabular-nums w-6 text-right fx-val" data-fx="reverb" data-param="wetdry">30</span>
-                                </div>
-                            </div>
-                            <!-- Delay -->
-                            <div data-id="192" class="fx-card" data-fx="delay">
-                                <div data-id="193" class="flex items-center justify-between mb-2">
-                                    <div data-id="194" class="flex items-center gap-2">
-                                        <div data-id="195" class="fx-toggle-dot off" data-fx="delay"></div>
-                                        <span data-id="196" class="text-xs font-semibold text-txt-200 uppercase tracking-wider">Echo / Delay</span>
-                                    </div>
-                                    <button data-id="197" class="fx-power-btn ctrl-btn p-1 rounded text-txt-400 text-xs" data-fx="delay">
-                                        <i data-id="198" data-lucide="power" class="w-3.5 h-3.5"></i>
-                                    </button>
-                                </div>
-                                <div data-id="199" class="space-y-2">
-                                    <div data-id="200" class="flex items-center gap-3">
-                                        <span data-id="201" class="text-[10px] text-txt-500 w-12">Time ms</span>
-                                        <input data-id="202" type="range" class="flex-1 fx-slider" data-fx="delay" data-param="time" min="50" max="1000" value="250" />
-                                        <span data-id="203" class="text-[10px] text-txt-400 tabular-nums w-8 text-right fx-val" data-fx="delay" data-param="time">250</span>
-                                    </div>
-                                    <div data-id="204" class="flex items-center gap-3">
-                                        <span data-id="205" class="text-[10px] text-txt-500 w-12">Feedback</span>
-                                        <input data-id="206" type="range" class="flex-1 fx-slider" data-fx="delay" data-param="feedback" min="0" max="90" value="40" />
-                                        <span data-id="207" class="text-[10px] text-txt-400 tabular-nums w-6 text-right fx-val" data-fx="delay" data-param="feedback">40%</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Pitch Shift -->
-                            <div data-id="208" class="fx-card" data-fx="pitch">
-                                <div data-id="209" class="flex items-center justify-between mb-2">
-                                    <div data-id="210" class="flex items-center gap-2">
-                                        <div data-id="211" class="fx-toggle-dot off" data-fx="pitch"></div>
-                                        <span data-id="212" class="text-xs font-semibold text-txt-200 uppercase tracking-wider">Pitch Shift</span>
-                                    </div>
-                                    <button data-id="213" class="fx-power-btn ctrl-btn p-1 rounded text-txt-400 text-xs" data-fx="pitch">
-                                        <i data-id="214" data-lucide="power" class="w-3.5 h-3.5"></i>
-                                    </button>
-                                </div>
-                                <div data-id="215" class="flex items-center gap-3">
-                                    <span data-id="216" class="text-[10px] text-txt-500 w-12">Semitone</span>
-                                    <input data-id="217" type="range" class="flex-1 fx-slider" data-fx="pitch" data-param="semitone" min="-12" max="12" value="0" />
-                                    <span data-id="218" class="text-[10px] text-txt-400 tabular-nums w-6 text-right fx-val" data-fx="pitch" data-param="semitone">0</span>
-                                </div>
-                            </div>
-                            <!-- Noise Gate -->
-                            <div data-id="219" class="fx-card" data-fx="gate">
-                                <div data-id="220" class="flex items-center justify-between mb-2">
-                                    <div data-id="221" class="flex items-center gap-2">
-                                        <div data-id="222" class="fx-toggle-dot off" data-fx="gate"></div>
-                                        <span data-id="223" class="text-xs font-semibold text-txt-200 uppercase tracking-wider">Noise Gate</span>
-                                    </div>
-                                    <button data-id="224" class="fx-power-btn ctrl-btn p-1 rounded text-txt-400 text-xs" data-fx="gate">
-                                        <i data-id="225" data-lucide="power" class="w-3.5 h-3.5"></i>
-                                    </button>
-                                </div>
-                                <div data-id="226" class="flex items-center gap-3">
-                                    <span data-id="227" class="text-[10px] text-txt-500 w-12">Threshold</span>
-                                    <input data-id="228" type="range" class="flex-1 fx-slider" data-fx="gate" data-param="threshold" min="-80" max="0" value="-40" />
-                                    <span data-id="229" class="text-[10px] text-txt-400 tabular-nums w-8 text-right fx-val" data-fx="gate" data-param="threshold">-40dB</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Right Sidebar -->
-        <aside data-id="230" id="sidebar-panel-u1v2" class="sidebar collapsed w-full md:w-72 lg:w-80 flex-shrink-0 p-4 md:p-5 overflow-y-auto" style="background:rgba(18,18,31,0.95);border-left:1px solid rgba(255,255,255,0.04);">
-            <div data-id="231" class="flex items-center justify-between mb-6">
-                <h3 data-id="232" class="text-sm font-bold text-white uppercase tracking-wider">Mix Panel</h3>
-                <button data-id="233" id="sidebar-close-w3x4" class="ctrl-btn p-1.5 rounded-lg text-txt-400">
-                    <i data-id="234" data-lucide="x" class="w-4 h-4"></i>
-                </button>
-            </div>
-
-            <!-- Stem Volume Mixers -->
-            <div data-id="235" class="space-y-4 mb-8">
-                <div data-id="236" class="flex items-center gap-3">
-                    <div data-id="237" class="w-3 h-3 rounded-full bg-drums flex-shrink-0"></div>
-                    <span data-id="238" class="text-xs font-medium text-txt-300 w-14">Drums</span>
-                    <input data-id="239" type="range" class="flex-1 drums-slider mix-volume" data-stem="drums" min="0" max="100" value="80" />
-                    <span data-id="240" class="text-xs text-txt-400 tabular-nums w-7 text-right mix-vol-label" data-stem="drums">80</span>
-                </div>
-                <div data-id="241" class="flex items-center gap-3">
-                    <div data-id="242" class="w-3 h-3 rounded-full bg-bass flex-shrink-0"></div>
-                    <span data-id="243" class="text-xs font-medium text-txt-300 w-14">Bass</span>
-                    <input data-id="244" type="range" class="flex-1 bass-slider mix-volume" data-stem="bass" min="0" max="100" value="80" />
-                    <span data-id="245" class="text-xs text-txt-400 tabular-nums w-7 text-right mix-vol-label" data-stem="bass">80</span>
-                </div>
-                <div data-id="246" class="flex items-center gap-3">
-                    <div data-id="247" class="w-3 h-3 rounded-full bg-piano flex-shrink-0"></div>
-                    <span data-id="248" class="text-xs font-medium text-txt-300 w-14">Piano</span>
-                    <input data-id="249" type="range" class="flex-1 piano-slider mix-volume" data-stem="piano" min="0" max="100" value="80" />
-                    <span data-id="250" class="text-xs text-txt-400 tabular-nums w-7 text-right mix-vol-label" data-stem="piano">80</span>
-                </div>
-                <div data-id="251" class="flex items-center gap-3">
-                    <div data-id="252" class="w-3 h-3 rounded-full bg-vocals flex-shrink-0"></div>
-                    <span data-id="253" class="text-xs font-medium text-txt-300 w-14">Vocals</span>
-                    <input data-id="254" type="range" class="flex-1 vocals-slider mix-volume" data-stem="vocals" min="0" max="100" value="80" />
-                    <span data-id="255" class="text-xs text-txt-400 tabular-nums w-7 text-right mix-vol-label" data-stem="vocals">80</span>
-                </div>
-            </div>
-
-            <!-- Reset Mix Button -->
-            <div data-id="256" class="mb-8">
-                <button data-id="257" id="reset-mix-btn-c2d2" class="w-full flex items-center justify-center gap-2 ctrl-btn px-4 py-2.5 rounded-xl text-sm text-txt-300 font-medium" style="background:rgba(255,77,77,0.06);border:1px solid rgba(255,77,77,0.12);">
-                    <i data-id="258" data-lucide="rotate-ccw" class="w-4 h-4"></i>
-                    Reset Mix
-                </button>
-            </div>
-
-            <!-- Export Options -->
-            <div data-id="259" class="mb-8">
-                <h4 data-id="260" class="text-xs font-bold text-txt-400 uppercase tracking-wider mb-3">Export</h4>
-                <div data-id="261" class="space-y-2">
-                    <button data-id="262" class="w-full flex items-center gap-3 ctrl-btn px-4 py-2.5 rounded-xl text-sm text-txt-200 font-medium" style="background:rgba(255,255,255,0.04);">
-                        <i data-id="263" data-lucide="archive" class="w-4 h-4 text-piano"></i>
-                        Export All Stems (ZIP)
-                    </button>
-                    <button data-id="264" class="w-full flex items-center gap-3 ctrl-btn px-4 py-2.5 rounded-xl text-sm text-txt-200 font-medium" style="background:rgba(255,255,255,0.04);">
-                        <i data-id="265" data-lucide="file-audio" class="w-4 h-4 text-bass"></i>
-                        Export Mixed (MP3)
-                    </button>
-                    <button data-id="266" class="w-full flex items-center gap-3 ctrl-btn px-4 py-2.5 rounded-xl text-sm text-txt-200 font-medium" style="background:rgba(255,255,255,0.04);">
-                        <i data-id="267" data-lucide="share-2" class="w-4 h-4 text-vocals"></i>
-                        Share Project
-                    </button>
-                </div>
-            </div>
-
-            <!-- Project Info -->
-            <div data-id="268">
-                <h4 data-id="269" class="text-xs font-bold text-txt-400 uppercase tracking-wider mb-3">Project Info</h4>
-                <div data-id="270" class="glass-card p-4 space-y-3 text-sm">
-                    <div data-id="271" class="flex justify-between">
-                        <span data-id="272" class="text-txt-400">File</span>
-                        <span data-id="273" class="text-txt-200 font-medium truncate ml-3" id="sidebar-filename-y5z6">my_track.mp3</span>
-                    </div>
-                    <div data-id="274" class="flex justify-between">
-                        <span data-id="275" class="text-txt-400">Duration</span>
-                        <span data-id="276" class="text-txt-200 font-medium tabular-nums">3:42</span>
-                    </div>
-                    <div data-id="277" class="flex justify-between">
-                        <span data-id="278" class="text-txt-400">Format</span>
-                        <span data-id="279" class="text-txt-200 font-medium">MP3 · 320kbps</span>
-                    </div>
-                    <div data-id="280" class="flex justify-between">
-                        <span data-id="281" class="text-txt-400">BPM</span>
-                        <span data-id="282" class="text-txt-200 font-medium tabular-nums">128</span>
-                    </div>
-                    <div data-id="283" class="flex justify-between">
-                        <span data-id="284" class="text-txt-400">Key</span>
-                        <span data-id="285" class="text-txt-200 font-medium">A Minor</span>
-                    </div>
-                    <div data-id="286" class="flex justify-between">
-                        <span data-id="287" class="text-txt-400">Sample Rate</span>
-                        <span data-id="288" class="text-txt-200 font-medium tabular-nums">44.1 kHz</span>
-                    </div>
-                </div>
-            </div>
-        </aside>
+    <div class="upload-zone" id="dropZone">
+      <input type="file" id="fileInput" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac" />
+      <div id="uploadPrompt">
+        <div class="text-4xl mb-3">🎵</div>
+        <p class="text-white font-semibold text-lg">Drop your audio file here</p>
+        <p class="text-sm mt-2" style="color:#7a7a9a">Supports MP3, WAV, FLAC, M4A, OGG, AAC</p>
+        <button class="btn-primary mt-4" onclick="document.getElementById('fileInput').click()">Choose File</button>
+      </div>
     </div>
 
-    <!-- Frequency Visualizer (above master bar) -->
-    <div data-id="289" id="freq-visualizer-wrap-g5h6" class="hidden fixed left-0 right-0 z-30" style="bottom:72px;">
-        <div data-id="290" class="max-w-screen-2xl mx-auto px-4 md:px-8">
-            <canvas data-id="291" id="freq-visualizer-canvas"></canvas>
+    <!-- Selected file info -->
+    <div id="fileInfo" class="hidden mt-4 p-4 rounded-xl" style="background:rgba(179,77,255,0.08);border:1px solid rgba(179,77,255,0.2)">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="font-semibold text-white" id="fileName">—</p>
+          <p class="text-sm" style="color:#7a7a9a" id="fileSize">—</p>
         </div>
+        <button class="btn-primary" id="separateBtn" onclick="startSeparation()">
+          ✨ Separate Stems
+        </button>
+      </div>
     </div>
 
-    <!-- Master Controls Bar (hidden initially) -->
-    <div data-id="292" id="master-bar-a7b8" class="master-bar hidden fixed bottom-0 left-0 right-0 z-30 px-4 md:px-8 py-3">
-        <div data-id="293" class="max-w-screen-2xl mx-auto">
-            <!-- Global seekbar -->
-            <div data-id="294" class="seekbar mb-3" id="master-seekbar-c9d0">
-                <div data-id="295" class="seekbar-fill h-full rounded-full bg-gradient-to-r from-drums via-piano to-vocals" id="master-seekbar-fill-e1f2" style="width:0%;"></div>
-            </div>
-            <div data-id="296" class="flex items-center justify-between gap-4">
-                <div data-id="297" class="flex items-center gap-3 min-w-0">
-                    <div data-id="298" class="hidden sm:flex items-end gap-[1px] h-5 flex-shrink-0">
-                        <span data-id="299" style="width:2px;height:40%;background:#ff4d4d;border-radius:1px;display:inline-block;" class="master-mini-bar"></span>
-                        <span data-id="300" style="width:2px;height:70%;background:#4d94ff;border-radius:1px;display:inline-block;" class="master-mini-bar"></span>
-                        <span data-id="301" style="width:2px;height:100%;background:#b34dff;border-radius:1px;display:inline-block;" class="master-mini-bar"></span>
-                        <span data-id="302" style="width:2px;height:55%;background:#4dff91;border-radius:1px;display:inline-block;" class="master-mini-bar"></span>
-                    </div>
-                    <div data-id="303" class="min-w-0">
-                        <p data-id="304" class="text-sm font-medium text-txt-200 truncate" id="master-track-name-g3h4">my_track.mp3</p>
-                        <p data-id="305" class="text-xs text-txt-400 tabular-nums"><span data-id="306" id="master-time-current-i5j6">0:00</span> / 3:42</p>
-                    </div>
-                </div>
-                <div data-id="307" class="flex items-center gap-1 md:gap-2">
-                    <button data-id="308" id="master-rewind-k7l8" class="ctrl-btn p-2 md:p-2.5 rounded-xl text-txt-300">
-                        <i data-id="309" data-lucide="skip-back" class="w-4 h-4 md:w-5 md:h-5"></i>
-                    </button>
-                    <button data-id="310" id="master-play-m9n0" class="p-2.5 md:p-3 rounded-xl text-white transition-all" style="background:linear-gradient(135deg,#b34dff,#4d94ff);box-shadow:0 0 20px rgba(179,77,255,0.3);">
-                        <i data-id="311" data-lucide="play" class="w-5 h-5 md:w-6 md:h-6" id="master-play-icon-o1p2"></i>
-                    </button>
-                    <button data-id="312" id="master-skip-q3r4" class="ctrl-btn p-2 md:p-2.5 rounded-xl text-txt-300">
-                        <i data-id="313" data-lucide="skip-forward" class="w-4 h-4 md:w-5 md:h-5"></i>
-                    </button>
-                    <!-- BPM Tap Button -->
-                    <button data-id="314" id="bpm-tap-btn-i7j8" class="ctrl-btn p-2 md:p-2.5 rounded-xl text-txt-400 relative" title="Tap Tempo">
-                        <i data-id="315" data-lucide="activity" class="w-4 h-4 md:w-5 md:h-5"></i>
-                    </button>
-                    <!-- Keyboard Shortcuts Help -->
-                    <div data-id="316" class="relative" id="shortcuts-wrap-k9l0">
-                        <button data-id="317" id="shortcuts-btn-m1n2" class="ctrl-btn p-2 md:p-2.5 rounded-xl text-txt-400" title="Keyboard Shortcuts">
-                            <i data-id="318" data-lucide="keyboard" class="w-4 h-4 md:w-5 md:h-5"></i>
-                        </button>
-                        <div data-id="319" class="shortcut-tooltip" id="shortcuts-tooltip-o3p4">
-                            <div data-id="320" class="space-y-1.5 text-txt-300">
-                                <div data-id="321" class="flex items-center gap-3"><kbd data-id="322" class="px-1.5 py-0.5 rounded bg-surface-300 text-[10px] font-bold text-txt-200">Space</kbd><span data-id="323">Play / Pause</span></div>
-                                <div data-id="324" class="flex items-center gap-3"><kbd data-id="325" class="px-1.5 py-0.5 rounded bg-surface-300 text-[10px] font-bold text-txt-200">M</kbd><span data-id="326">Mute All</span></div>
-                                <div data-id="327" class="flex items-center gap-3"><kbd data-id="328" class="px-1.5 py-0.5 rounded bg-surface-300 text-[10px] font-bold text-txt-200">S</kbd><span data-id="329">Solo Cycle</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div data-id="330" class="hidden md:flex items-center gap-2 min-w-[140px]">
-                    <i data-id="331" data-lucide="volume-2" class="w-4 h-4 text-txt-400 flex-shrink-0"></i>
-                    <input data-id="332" type="range" class="flex-1" id="master-volume-s5t6" min="0" max="100" value="85" />
-                </div>
-            </div>
-        </div>
+    <!-- Progress -->
+    <div id="progressSection" class="hidden mt-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-white">Separating stems with Demucs AI...</span>
+        <span class="text-sm font-semibold" style="color:#b34dff" id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <p class="text-xs mt-2" style="color:#7a7a9a">⏳ First run downloads the AI model (~200MB). Takes 2–10 minutes.</p>
     </div>
 
-    <footer data-id="333" id="footer-u7v8" class="py-8 text-center pb-24">
-        <p data-id="334" class="text-xs text-txt-500">Made by Copilot</p>
-    </footer>
+    <!-- Error -->
+    <div id="errorSection" class="hidden mt-4 p-4 rounded-xl" style="background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.3)">
+      <p class="text-sm font-semibold" style="color:#ff4d4d">❌ Error</p>
+      <p class="text-sm mt-1" style="color:#7a7a9a" id="errorMsg"></p>
+    </div>
+  </div>
 
-    <script>
-    // Guard lucide icons
-    if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
-        lucide.createIcons();
+  <!-- Stems Grid (hidden until complete) -->
+  <div id="stemsSection" class="hidden">
+    <h2 class="text-lg font-semibold mb-4 text-white">🎛️ Your Stems</h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+      <div class="stem-card stem-drums">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">🥁</span>
+          <div>
+            <p class="font-bold text-white">Drums</p>
+            <p class="text-xs" style="color:#ff4d4d">Rhythm & Percussion</p>
+          </div>
+        </div>
+        <audio id="audio-drums" controls></audio>
+        <a id="dl-drums" class="block mt-3 text-center text-xs font-semibold py-2 rounded-lg" style="background:rgba(255,77,77,0.15);color:#ff4d4d;text-decoration:none">⬇ Download drums.wav</a>
+      </div>
+
+      <div class="stem-card stem-bass">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">🎸</span>
+          <div>
+            <p class="font-bold text-white">Bass</p>
+            <p class="text-xs" style="color:#4d94ff">Low Frequencies</p>
+          </div>
+        </div>
+        <audio id="audio-bass" controls></audio>
+        <a id="dl-bass" class="block mt-3 text-center text-xs font-semibold py-2 rounded-lg" style="background:rgba(77,148,255,0.15);color:#4d94ff;text-decoration:none">⬇ Download bass.wav</a>
+      </div>
+
+      <div class="stem-card stem-piano">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">🎹</span>
+          <div>
+            <p class="font-bold text-white">Other / Piano</p>
+            <p class="text-xs" style="color:#b34dff">Melodic Instruments</p>
+          </div>
+        </div>
+        <audio id="audio-piano" controls></audio>
+        <a id="dl-piano" class="block mt-3 text-center text-xs font-semibold py-2 rounded-lg" style="background:rgba(179,77,255,0.15);color:#b34dff;text-decoration:none">⬇ Download piano.wav</a>
+      </div>
+
+      <div class="stem-card stem-vocals">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">🎤</span>
+          <div>
+            <p class="font-bold text-white">Vocals</p>
+            <p class="text-xs" style="color:#4dff91">Voice Track</p>
+          </div>
+        </div>
+        <audio id="audio-vocals" controls></audio>
+        <a id="dl-vocals" class="block mt-3 text-center text-xs font-semibold py-2 rounded-lg" style="background:rgba(77,255,145,0.15);color:#4dff91;text-decoration:none">⬇ Download vocals.wav</a>
+      </div>
+
+    </div>
+    <button class="btn-primary mt-6 w-full" onclick="resetUI()">🔄 Separate Another Song</button>
+  </div>
+
+  <!-- Demo Mode Warning -->
+  <div id="demoWarning" class="glass p-5 hidden">
+    <p class="font-semibold text-white mb-2">🔌 Backend Not Detected</p>
+    <p class="text-sm mb-3" style="color:#7a7a9a">Make sure the Flask server is running, then refresh this page:</p>
+    <div class="p-3 rounded-lg text-sm font-mono" style="background:#0d0d14;color:#b34dff">
+      cd C:\Users\rolli\Documents\STEMBeats\backend<br>
+      python app.py
+    </div>
+    <p class="text-xs mt-3" style="color:#7a7a9a">Then open <strong style="color:#b34dff">http://localhost:5000</strong> in your browser.</p>
+  </div>
+
+</main>
+
+<script>
+const API = '';  // same origin — Flask serves this page
+let selectedFile = null;
+let currentJobId = null;
+let pollInterval = null;
+
+// ── Backend health check ──────────────────────────────────────────────────
+async function checkBackend() {
+  try {
+    const r = await fetch('/health', {signal: AbortSignal.timeout(3000)});
+    const d = await r.json();
+    if (d.status === 'ok') {
+      document.getElementById('badge').className = 'badge badge-connected';
+      document.getElementById('badge').textContent = '🟢 Backend Connected';
+      document.getElementById('demoWarning').classList.add('hidden');
+      return true;
     }
+  } catch(e) {}
+  document.getElementById('badge').className = 'badge badge-demo';
+  document.getElementById('badge').textContent = '🔴 Backend Offline';
+  document.getElementById('demoWarning').classList.remove('hidden');
+  return false;
+}
 
-    // ===== STATE =====
-    const TOTAL_SECONDS = 222;
-    const STEMS = ['drums', 'bass', 'piano', 'vocals'];
-    const STEM_COLORS = { drums: '#ff4d4d', bass: '#4d94ff', piano: '#b34dff', vocals: '#4dff91' };
-    let state = {
-        uploaded: false,
-        processing: false,
-        ready: false,
-        playing: {},
-        muted: {},
-        solo: null,
-        volumes: {},
-        elapsed: 0,
-        masterPlaying: false,
-    };
-    STEMS.forEach(s => { state.playing[s] = false; state.muted[s] = false; state.volumes[s] = 80; });
+// ── File selection ────────────────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  selectedFile = file;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+  document.getElementById('fileInfo').classList.remove('hidden');
+  document.getElementById('errorSection').classList.add('hidden');
+  document.getElementById('stemsSection').classList.add('hidden');
+});
 
-    let globalTimer = null;
+// ── Drag and drop ─────────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  selectedFile = file;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+  document.getElementById('fileInfo').classList.remove('hidden');
+  document.getElementById('errorSection').classList.add('hidden');
+  document.getElementById('stemsSection').classList.add('hidden');
+});
 
-    // ===== EQ STATE =====
-    const EQ_BANDS = ['32Hz','64Hz','125Hz','250Hz','500Hz','1kHz','2kHz','4kHz','8kHz','16kHz'];
-    const EQ_COLORS = ['#4d94ff','#4da8ff','#5cbcff','#7cc8ff','#a0d0ff','#c0b0ff','#d090ff','#e070e0','#f06060','#ff4d4d'];
-    let eqValues = new Array(10).fill(0);
+// ── Start separation ──────────────────────────────────────────────────────
+async function startSeparation() {
+  if (!selectedFile) return;
 
-    const EQ_PRESETS = {
-        'flat':           [0,0,0,0,0,0,0,0,0,0],
-        'bass-boost':     [8,6,4,2,0,-1,-2,-1,0,1],
-        'vocal-enhance':  [-2,-1,0,2,4,5,4,2,0,-1],
-        'treble-boost':   [-1,0,0,0,1,2,4,6,8,10]
-    };
+  const ok = await checkBackend();
+  if (!ok) {
+    showError('Backend is not running. Start it with: python app.py');
+    return;
+  }
 
-    // ===== FX STATE =====
-    let fxState = {
-        reverb: { on: false, wetdry: 30 },
-        delay: { on: false, time: 250, feedback: 40 },
-        pitch: { on: false, semitone: 0 },
-        gate: { on: false, threshold: -40 }
-    };
+  document.getElementById('separateBtn').disabled = true;
+  document.getElementById('progressSection').classList.remove('hidden');
+  document.getElementById('errorSection').classList.add('hidden');
+  document.getElementById('stemsSection').classList.add('hidden');
+  setProgress(0);
 
-    // ===== BUILD EQ SLIDERS =====
-    function buildEQSliders() {
-        const container = document.querySelector('[data-id="eq-sliders-n5o6"]');
-        if (!container) return;
-        container.innerHTML = '';
-        EQ_BANDS.forEach((band, i) => {
-            const col = document.createElement('div');
-            col.className = 'eq-slider-container flex-1';
-            const valLabel = document.createElement('span');
-            valLabel.className = 'text-[10px] tabular-nums text-txt-400 font-medium';
-            valLabel.textContent = '0dB';
-            valLabel.id = 'eq-val-' + i;
-            const slider = document.createElement('input');
-            slider.type = 'range';
-            slider.className = 'eq-slider';
-            slider.min = '-12';
-            slider.max = '12';
-            slider.value = '0';
-            slider.dataset.band = i;
-            slider.style.setProperty('--thumb-color', EQ_COLORS[i]);
-            // Style the thumb color
-            const thumbStyle = document.createElement('style');
-            thumbStyle.textContent = `
-                .eq-slider[data-band="${i}"]::-webkit-slider-thumb { background: ${EQ_COLORS[i]}; }
-                .eq-slider[data-band="${i}"]::-moz-range-thumb { background: ${EQ_COLORS[i]}; }
-            `;
-            document.head.appendChild(thumbStyle);
+  const formData = new FormData();
+  formData.append('file', selectedFile);
 
-            slider.addEventListener('input', () => {
-                const val = parseInt(slider.value);
-                eqValues[i] = val;
-                valLabel.textContent = (val > 0 ? '+' : '') + val + 'dB';
-                // Deselect presets
-                document.querySelectorAll('.eq-preset-btn').forEach(b => b.classList.remove('active'));
-            });
+  try {
+    const res = await fetch('/api/separate', {method: 'POST', body: formData});
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    currentJobId = data.job_id;
+    pollStatus();
+  } catch(e) {
+    showError(e.message);
+    document.getElementById('separateBtn').disabled = false;
+  }
+}
 
-            const freqLabel = document.createElement('span');
-            freqLabel.className = 'text-[9px] text-txt-500 font-medium';
-            freqLabel.textContent = band;
+// ── Poll job status ───────────────────────────────────────────────────────
+function pollStatus() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/status/${currentJobId}`);
+      const data = await res.json();
+      setProgress(data.progress || 0);
+      if (data.status === 'completed') {
+        clearInterval(pollInterval);
+        setProgress(100);
+        loadStems();
+      } else if (data.status === 'failed') {
+        clearInterval(pollInterval);
+        showError(data.error || 'Separation failed');
+        document.getElementById('separateBtn').disabled = false;
+      }
+    } catch(e) { /* network blip, keep polling */ }
+  }, 1500);
+}
 
-            col.appendChild(valLabel);
-            col.appendChild(slider);
-            col.appendChild(freqLabel);
-            container.appendChild(col);
-        });
+// ── Load completed stems ──────────────────────────────────────────────────
+async function loadStems() {
+  const res = await fetch(`/api/stems/${currentJobId}`);
+  const data = await res.json();
+  const stems = data.stems;
+
+  const map = {
+    drums: ['audio-drums', 'dl-drums'],
+    bass:  ['audio-bass',  'dl-bass'],
+    piano: ['audio-piano', 'dl-piano'],
+    vocals:['audio-vocals','dl-vocals'],
+  };
+
+  // Demucs names: drums, bass, other, vocals
+  const nameMap = { piano: ['piano','other','guitar'] };
+
+  for (const [key, [audioId, dlId]] of Object.entries(map)) {
+    // Try the exact key first, then alternates
+    let url = stems[key];
+    if (!url && nameMap[key]) {
+      for (const alt of nameMap[key]) {
+        if (stems[alt]) { url = stems[alt]; break; }
+      }
     }
-
-    function applyEQPreset(name) {
-        const preset = EQ_PRESETS[name];
-        if (!preset) return;
-        eqValues = [...preset];
-        // Animate sliders
-        document.querySelectorAll('.eq-slider').forEach((slider, i) => {
-            const target = preset[i];
-            const current = parseInt(slider.value);
-            const steps = 15;
-            let step = 0;
-            const interval = setInterval(() => {
-                step++;
-                const progress = step / steps;
-                const eased = 1 - Math.pow(1 - progress, 3);
-                const newVal = Math.round(current + (target - current) * eased);
-                slider.value = newVal;
-                const label = document.getElementById('eq-val-' + i);
-                if (label) label.textContent = (newVal > 0 ? '+' : '') + newVal + 'dB';
-                if (step >= steps) {
-                    clearInterval(interval);
-                    slider.value = target;
-                    if (label) label.textContent = (target > 0 ? '+' : '') + target + 'dB';
-                }
-            }, 20);
-        });
-        // Highlight preset button
-        document.querySelectorAll('.eq-preset-btn').forEach(b => {
-            b.classList.toggle('active', b.dataset.preset === name);
-        });
+    if (url) {
+      document.getElementById(audioId).src = url;
+      const dl = document.getElementById(dlId);
+      dl.href = url;
+      dl.download = `${key}.wav`;
     }
-
-    // ===== WAVEFORM GENERATION =====
-    function generateWaveformBars(container, stem) {
-        const barCount = 48;
-        const color = STEM_COLORS[stem];
-        container.innerHTML = '';
-        for (let i = 0; i < barCount; i++) {
-            const bar = document.createElement('span');
-            bar.className = 'waveform-bar';
-            const h = 8 + Math.random() * 52;
-            bar.style.height = h + 'px';
-            bar.style.backgroundColor = color;
-            bar.style.animationDelay = (i * 0.04 + Math.random() * 0.15) + 's';
-            bar.style.animationDuration = (0.4 + Math.random() * 0.5) + 's';
-            bar.style.opacity = (0.5 + state.volumes[stem] / 200);
-            container.appendChild(bar);
-        }
-    }
-
-    function initWaveforms() {
-        document.querySelectorAll('.waveform-container').forEach(container => {
-            const stem = container.dataset.stem;
-            if (stem) generateWaveformBars(container, stem);
-        });
-    }
-
-    // ===== FORMAT TIME =====
-    function formatTime(seconds) {
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return m + ':' + (s < 10 ? '0' : '') + s;
-    }
-
-    // ===== VU METER =====
-    const VU_CIRCUMFERENCE = 97.4;
-    let vuAnimFrame = null;
-
-    function updateVUMeters() {
-        STEMS.forEach(stem => {
-            const ring = document.querySelector(`.vu-meter-ring[data-stem="${stem}"]`);
-            if (!ring) return;
-            const isEffPlaying = state.playing[stem] && !state.muted[stem] && (state.solo === null || state.solo === stem);
-            let level;
-            if (isEffPlaying) {
-                level = 0.3 + Math.random() * 0.7 * (state.volumes[stem] / 100);
-            } else {
-                level = 0;
-            }
-            const offset = VU_CIRCUMFERENCE * (1 - level);
-            ring.style.strokeDashoffset = offset;
-        });
-        if (state.masterPlaying) {
-            vuAnimFrame = requestAnimationFrame(updateVUMeters);
-        }
-    }
-
-    // ===== FREQUENCY VISUALIZER =====
-    const vizCanvas = document.getElementById('freq-visualizer-canvas');
-    const vizCtx = vizCanvas ? vizCanvas.getContext('2d') : null;
-    let vizAnimFrame = null;
-    const VIZ_BAR_COUNT = 128;
-    let vizAmplitudes = new Array(VIZ_BAR_COUNT).fill(0);
-
-    function resizeVizCanvas() {
-        if (!vizCanvas) return;
-        const rect = vizCanvas.parentElement.getBoundingClientRect();
-        vizCanvas.width = rect.width * (window.devicePixelRatio || 1);
-        vizCanvas.height = 48 * (window.devicePixelRatio || 1);
-        vizCtx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
-    }
-
-    function drawVisualizer() {
-        if (!vizCtx || !vizCanvas) return;
-        const w = vizCanvas.width / (window.devicePixelRatio || 1);
-        const h = vizCanvas.height / (window.devicePixelRatio || 1);
-        vizCtx.clearRect(0, 0, w, h);
-
-        const barW = (w / VIZ_BAR_COUNT) - 1;
-        const isPlaying = state.masterPlaying && STEMS.some(s => state.playing[s]);
-
-        for (let i = 0; i < VIZ_BAR_COUNT; i++) {
-            if (isPlaying) {
-                vizAmplitudes[i] += (Math.random() * h * 0.85 - vizAmplitudes[i]) * 0.3;
-            } else {
-                vizAmplitudes[i] *= 0.92;
-            }
-            const barH = Math.max(2, vizAmplitudes[i]);
-            const x = i * (barW + 1);
-
-            // Color based on position: drums(red) → bass(blue) → piano(purple) → vocals(green)
-            const section = Math.floor(i / (VIZ_BAR_COUNT / 4));
-            const colors = ['#ff4d4d', '#4d94ff', '#b34dff', '#4dff91'];
-            const alphas = ['0.7', '0.7', '0.7', '0.7'];
-            const color = colors[Math.min(section, 3)];
-
-            vizCtx.fillStyle = color;
-            vizCtx.globalAlpha = parseFloat(alphas[Math.min(section, 3)]);
-            vizCtx.beginPath();
-            vizCtx.roundRect(x, h - barH, barW, barH, 1);
-            vizCtx.fill();
-        }
-        vizCtx.globalAlpha = 1;
-        vizAnimFrame = requestAnimationFrame(drawVisualizer);
-    }
-
-    function startVisualizer() {
-        if (vizAnimFrame) return;
-        resizeVizCanvas();
-        drawVisualizer();
-    }
-
-    function stopVisualizer() {
-        // Let it fade out naturally
-    }
-
-    // ===== UPDATE UI =====
-    function updateUI() {
-        STEMS.forEach(stem => {
-            const card = document.querySelector(`.stem-card[data-stem="${stem}"]`);
-            if (!card) return;
-            const waveContainer = card.querySelector('.waveform-container');
-            const playBtn = card.querySelector('.play-btn');
-            const muteBtn = card.querySelector('.mute-btn');
-            const soloBtn = card.querySelector('.solo-btn');
-            const timeEl = card.querySelector('.stem-time');
-            const seekFill = card.querySelector('.seekbar-fill');
-            const bars = waveContainer.querySelectorAll('.waveform-bar');
-
-            const isEffectivePlaying = state.playing[stem] && !state.muted[stem] && (state.solo === null || state.solo === stem);
-            if (isEffectivePlaying) {
-                waveContainer.classList.add('playing');
-                waveContainer.classList.remove('muted');
-            } else {
-                waveContainer.classList.remove('playing');
-            }
-
-            if (state.muted[stem]) {
-                waveContainer.classList.add('muted');
-                muteBtn.innerHTML = '<i data-lucide="volume-x" class="w-4 h-4"></i>';
-                muteBtn.classList.add('active');
-                muteBtn.style.color = '#ff4d4d';
-            } else {
-                muteBtn.innerHTML = '<i data-lucide="volume-2" class="w-4 h-4"></i>';
-                muteBtn.classList.remove('active');
-                muteBtn.style.color = '';
-            }
-
-            if (state.playing[stem]) {
-                playBtn.innerHTML = '<i data-lucide="pause" class="w-4 h-4"></i>';
-                playBtn.classList.add('active');
-            } else {
-                playBtn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
-                playBtn.classList.remove('active');
-            }
-
-            if (state.solo === stem) {
-                soloBtn.classList.add('active');
-                soloBtn.style.color = STEM_COLORS[stem];
-                card.classList.remove('dimmed');
-            } else if (state.solo !== null) {
-                soloBtn.classList.remove('active');
-                soloBtn.style.color = '';
-                card.classList.add('dimmed');
-            } else {
-                soloBtn.classList.remove('active');
-                soloBtn.style.color = '';
-                card.classList.remove('dimmed');
-            }
-
-            bars.forEach(bar => {
-                bar.style.opacity = 0.25 + (state.volumes[stem] / 133);
-            });
-
-            const progress = (state.elapsed / TOTAL_SECONDS) * 100;
-            timeEl.textContent = formatTime(state.elapsed);
-            seekFill.style.width = progress + '%';
-        });
-
-        const masterTimeCurrent = document.getElementById('master-time-current-i5j6');
-        const masterSeekFill = document.getElementById('master-seekbar-fill-e1f2');
-        const masterPlayIcon = document.getElementById('master-play-icon-o1p2');
-        masterTimeCurrent.textContent = formatTime(state.elapsed);
-        masterSeekFill.style.width = (state.elapsed / TOTAL_SECONDS * 100) + '%';
-
-        if (state.masterPlaying) {
-            masterPlayIcon.setAttribute('data-lucide', 'pause');
-        } else {
-            masterPlayIcon.setAttribute('data-lucide', 'play');
-        }
-
-        document.querySelectorAll('.mix-vol-label').forEach(el => {
-            el.textContent = state.volumes[el.dataset.stem];
-        });
-
-        if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
-            lucide.createIcons();
-        }
-    }
-
-    // ===== TIMER =====
-    function startTimer() {
-        if (globalTimer) return;
-        globalTimer = setInterval(() => {
-            if (state.elapsed < TOTAL_SECONDS) {
-                state.elapsed++;
-                updateUI();
-            } else {
-                stopTimer();
-                state.masterPlaying = false;
-                STEMS.forEach(s => state.playing[s] = false);
-                updateUI();
-                if (vuAnimFrame) { cancelAnimationFrame(vuAnimFrame); vuAnimFrame = null; }
-            }
-        }, 1000);
-        // Start VU meters
-        if (!vuAnimFrame) updateVUMeters();
-        startVisualizer();
-    }
-
-    function stopTimer() {
-        if (globalTimer) { clearInterval(globalTimer); globalTimer = null; }
-        if (vuAnimFrame) { cancelAnimationFrame(vuAnimFrame); vuAnimFrame = null; }
-    }
-
-    function isAnyPlaying() {
-        return STEMS.some(s => state.playing[s]);
-    }
-
-    // ===== UPLOAD FLOW =====
-    const uploadZone = document.getElementById('upload-zone-w9p3');
-    const dropzone = document.getElementById('upload-dropzone-a1b2');
-    const browseBtn = document.getElementById('browse-btn-c3d4');
-    const uploadCta = document.getElementById('upload-cta-h3k7');
-    const processingState = document.getElementById('processing-state-e5f6');
-    const stemsSection = document.getElementById('stems-section-m3n4');
-    const masterBar = document.getElementById('master-bar-a7b8');
-    const freqVizWrap = document.getElementById('freq-visualizer-wrap-g5h6');
-
-    const fakeFilenames = ['my_track.mp3', 'summer_vibes.wav', 'midnight_groove.flac', 'acoustic_session.mp3', 'studio_mix_final.wav'];
-
-    function triggerUpload() {
-        if (state.processing || state.ready) return;
-        const filename = fakeFilenames[Math.floor(Math.random() * fakeFilenames.length)];
-        document.getElementById('track-name-display-o5p6').textContent = filename;
-        document.getElementById('sidebar-filename-y5z6').textContent = filename;
-        document.getElementById('master-track-name-g3h4').textContent = filename;
-
-        state.processing = true;
-        uploadZone.classList.add('hidden');
-        processingState.classList.remove('hidden');
-
-        const bar = document.getElementById('processing-bar-i9j0');
-        const pct = document.getElementById('processing-pct-k1l2');
-        const txt = document.getElementById('processing-text-g7h8');
-        let progress = 0;
-
-        const procTimer = setInterval(() => {
-            progress += Math.random() * 8 + 2;
-            if (progress > 100) progress = 100;
-            bar.style.width = progress + '%';
-            pct.textContent = Math.round(progress) + '%';
-
-            if (progress > 40 && progress < 80) {
-                txt.textContent = 'Separating stems...';
-            } else if (progress >= 80) {
-                txt.textContent = 'Finalizing tracks...';
-            }
-
-            if (progress >= 100) {
-                clearInterval(procTimer);
-                setTimeout(() => {
-                    state.processing = false;
-                    state.ready = true;
-                    processingState.classList.add('hidden');
-                    stemsSection.classList.remove('hidden');
-                    masterBar.classList.remove('hidden');
-                    freqVizWrap.classList.remove('hidden');
-                    initWaveforms();
-                    buildEQSliders();
-                    resizeVizCanvas();
-                    startVisualizer();
-                    updateUI();
-                }, 400);
-            }
-        }, 120);
-    }
-
-    browseBtn.addEventListener('click', triggerUpload);
-    uploadCta.addEventListener('click', () => {
-        if (state.ready) {
-            state.ready = false;
-            state.elapsed = 0;
-            state.masterPlaying = false;
-            stopTimer();
-            STEMS.forEach(s => { state.playing[s] = false; state.muted[s] = false; });
-            state.solo = null;
-            stemsSection.classList.add('hidden');
-            masterBar.classList.add('hidden');
-            freqVizWrap.classList.add('hidden');
-            uploadZone.classList.remove('hidden');
-            if (vizAnimFrame) { cancelAnimationFrame(vizAnimFrame); vizAnimFrame = null; }
-        } else {
-            triggerUpload();
-        }
-    });
-
-    // Drag & drop visual feedback
-    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
-    dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('dragover'); });
-    dropzone.addEventListener('drop', (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); triggerUpload(); });
-    dropzone.addEventListener('click', (e) => { if (e.target === dropzone || !e.target.closest('button')) triggerUpload(); });
-
-    // ===== STEM CONTROLS =====
-    document.querySelectorAll('.play-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const stem = btn.dataset.stem;
-            state.playing[stem] = !state.playing[stem];
-            if (isAnyPlaying()) { startTimer(); state.masterPlaying = true; }
-            else { stopTimer(); state.masterPlaying = false; }
-            updateUI();
-        });
-    });
-
-    document.querySelectorAll('.mute-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const stem = btn.dataset.stem;
-            state.muted[stem] = !state.muted[stem];
-            updateUI();
-        });
-    });
-
-    document.querySelectorAll('.solo-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const stem = btn.dataset.stem;
-            state.solo = (state.solo === stem) ? null : stem;
-            updateUI();
-        });
-    });
-
-    function syncVolumes(stem, value) {
-        state.volumes[stem] = parseInt(value);
-        document.querySelectorAll(`input[data-stem="${stem}"]`).forEach(slider => {
-            slider.value = value;
-        });
-        const container = document.querySelector(`.waveform-container[data-stem="${stem}"]`);
-        if (container) {
-            container.querySelectorAll('.waveform-bar').forEach(bar => {
-                bar.style.opacity = 0.25 + (state.volumes[stem] / 133);
-            });
-        }
-        document.querySelectorAll(`.mix-vol-label[data-stem="${stem}"]`).forEach(l => { l.textContent = value; });
-    }
-
-    document.querySelectorAll('.stem-volume, .mix-volume').forEach(slider => {
-        slider.addEventListener('input', () => {
-            syncVolumes(slider.dataset.stem, slider.value);
-        });
-    });
-
-    // ===== EQ PRESET BUTTONS =====
-    document.querySelectorAll('.eq-preset-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            applyEQPreset(btn.dataset.preset);
-        });
-    });
-
-    // ===== EQ PANEL TOGGLE =====
-    document.getElementById('eq-toggle-btn-f7g8').addEventListener('click', () => {
-        const body = document.getElementById('eq-body-j1k2');
-        const icon = document.getElementById('eq-toggle-icon-h9i0');
-        body.classList.toggle('collapsed');
-        if (body.classList.contains('collapsed')) {
-            icon.setAttribute('data-lucide', 'chevron-down');
-        } else {
-            icon.setAttribute('data-lucide', 'chevron-up');
-        }
-        if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") lucide.createIcons();
-    });
-
-    // ===== FX PANEL TOGGLE =====
-    document.getElementById('fx-toggle-btn-t1u2').addEventListener('click', () => {
-        const body = document.getElementById('fx-body-x5y6');
-        const icon = document.getElementById('fx-toggle-icon-v3w4');
-        body.classList.toggle('collapsed');
-        if (body.classList.contains('collapsed')) {
-            icon.setAttribute('data-lucide', 'chevron-down');
-        } else {
-            icon.setAttribute('data-lucide', 'chevron-up');
-        }
-        if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") lucide.createIcons();
-    });
-
-    // ===== FX POWER BUTTONS =====
-    document.querySelectorAll('.fx-power-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const fx = btn.dataset.fx;
-            fxState[fx].on = !fxState[fx].on;
-            const dot = document.querySelector(`.fx-toggle-dot[data-fx="${fx}"]`);
-            if (dot) {
-                dot.classList.toggle('on', fxState[fx].on);
-                dot.classList.toggle('off', !fxState[fx].on);
-            }
-        });
-    });
-
-    // ===== FX SLIDERS =====
-    document.querySelectorAll('.fx-slider').forEach(slider => {
-        slider.addEventListener('input', () => {
-            const fx = slider.dataset.fx;
-            const param = slider.dataset.param;
-            const val = parseInt(slider.value);
-            fxState[fx][param] = val;
-            const label = document.querySelector(`.fx-val[data-fx="${fx}"][data-param="${param}"]`);
-            if (label) {
-                if (param === 'threshold') label.textContent = val + 'dB';
-                else if (param === 'feedback') label.textContent = val + '%';
-                else label.textContent = val;
-            }
-        });
-    });
-
-    // ===== MASTER CONTROLS =====
-    document.getElementById('master-play-m9n0').addEventListener('click', () => {
-        state.masterPlaying = !state.masterPlaying;
-        STEMS.forEach(s => { state.playing[s] = state.masterPlaying; });
-        if (state.masterPlaying) { if (state.elapsed >= TOTAL_SECONDS) state.elapsed = 0; startTimer(); }
-        else { stopTimer(); }
-        updateUI();
-    });
-
-    document.getElementById('master-rewind-k7l8').addEventListener('click', () => {
-        state.elapsed = 0;
-        updateUI();
-    });
-
-    document.getElementById('master-skip-q3r4').addEventListener('click', () => {
-        state.elapsed = TOTAL_SECONDS;
-        stopTimer();
-        state.masterPlaying = false;
-        STEMS.forEach(s => state.playing[s] = false);
-        updateUI();
-    });
-
-    document.getElementById('master-seekbar-c9d0').addEventListener('click', (e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const pct = (e.clientX - rect.left) / rect.width;
-        state.elapsed = Math.round(pct * TOTAL_SECONDS);
-        updateUI();
-    });
-
-    document.querySelectorAll('.seekbar[data-stem]').forEach(bar => {
-        bar.addEventListener('click', (e) => {
-            const rect = bar.getBoundingClientRect();
-            const pct = (e.clientX - rect.left) / rect.width;
-            state.elapsed = Math.round(pct * TOTAL_SECONDS);
-            updateUI();
-        });
-    });
-
-    // ===== BPM TAP TEMPO =====
-    let tapTimes = [];
-    document.getElementById('bpm-tap-btn-i7j8').addEventListener('click', () => {
-        const btn = document.getElementById('bpm-tap-btn-i7j8');
-        const now = Date.now();
-        tapTimes.push(now);
-        if (tapTimes.length > 8) tapTimes = tapTimes.slice(-8);
-
-        // Flash effect
-        btn.classList.remove('bpm-flash');
-        void btn.offsetWidth;
-        btn.classList.add('bpm-flash');
-
-        if (tapTimes.length >= 2) {
-            let total = 0;
-            for (let i = 1; i < tapTimes.length; i++) {
-                total += tapTimes[i] - tapTimes[i - 1];
-            }
-            const avgMs = total / (tapTimes.length - 1);
-            const bpm = Math.round(60000 / avgMs);
-            // Update BPM display in sidebar
-            const bpmDisplay = document.querySelector('[data-id="187"]');
-            if (bpmDisplay) bpmDisplay.textContent = Math.min(300, Math.max(40, bpm));
-        }
-
-        // Reset if idle too long
-        setTimeout(() => {
-            if (Date.now() - tapTimes[tapTimes.length - 1] > 3000) {
-                tapTimes = [];
-            }
-        }, 3500);
-    });
-
-    // ===== KEYBOARD SHORTCUTS =====
-    document.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-        if (e.code === 'Space') {
-            e.preventDefault();
-            if (!state.ready) return;
-            state.masterPlaying = !state.masterPlaying;
-            STEMS.forEach(s => { state.playing[s] = state.masterPlaying; });
-            if (state.masterPlaying) { if (state.elapsed >= TOTAL_SECONDS) state.elapsed = 0; startTimer(); }
-            else { stopTimer(); }
-            updateUI();
-        }
-
-        if (e.key === 'm' || e.key === 'M') {
-            if (!state.ready) return;
-            const allMuted = STEMS.every(s => state.muted[s]);
-            STEMS.forEach(s => { state.muted[s] = !allMuted; });
-            updateUI();
-        }
-
-        if (e.key === 's' || e.key === 'S') {
-            if (!state.ready) return;
-            if (state.solo === null) {
-                state.solo = STEMS[0];
-            } else {
-                const idx = STEMS.indexOf(state.solo);
-                state.solo = idx < STEMS.length - 1 ? STEMS[idx + 1] : null;
-            }
-            updateUI();
-        }
-    });
-
-    // ===== KEYBOARD SHORTCUTS TOOLTIP =====
-    const shortcutsBtn = document.getElementById('shortcuts-btn-m1n2');
-    const shortcutsTooltip = document.getElementById('shortcuts-tooltip-o3p4');
-    shortcutsBtn.addEventListener('click', () => {
-        shortcutsTooltip.classList.toggle('visible');
-    });
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('#shortcuts-wrap-k9l0')) {
-            shortcutsTooltip.classList.remove('visible');
-        }
-    });
-
-    // ===== RESET MIX =====
-    document.getElementById('reset-mix-btn-c2d2').addEventListener('click', () => {
-        // Reset volumes
-        STEMS.forEach(s => {
-            syncVolumes(s, 80);
-        });
-        // Reset mutes
-        STEMS.forEach(s => { state.muted[s] = false; });
-        state.solo = null;
-
-        // Reset EQ to flat
-        applyEQPreset('flat');
-
-        // Reset FX
-        Object.keys(fxState).forEach(fx => {
-            fxState[fx].on = false;
-            const dot = document.querySelector(`.fx-toggle-dot[data-fx="${fx}"]`);
-            if (dot) { dot.classList.remove('on'); dot.classList.add('off'); }
-        });
-        // Reset FX sliders
-        document.querySelectorAll('.fx-slider').forEach(slider => {
-            const defaults = { wetdry: 30, time: 250, feedback: 40, semitone: 0, threshold: -40 };
-            const param = slider.dataset.param;
-            if (defaults[param] !== undefined) {
-                slider.value = defaults[param];
-                const label = document.querySelector(`.fx-val[data-fx="${slider.dataset.fx}"][data-param="${param}"]`);
-                if (label) {
-                    if (param === 'threshold') label.textContent = defaults[param] + 'dB';
-                    else if (param === 'feedback') label.textContent = defaults[param] + '%';
-                    else label.textContent = defaults[param];
-                }
-            }
-        });
-
-        // Button flash
-        const btn = document.getElementById('reset-mix-btn-c2d2');
-        btn.style.borderColor = 'rgba(77,255,145,0.5)';
-        btn.style.color = '#4dff91';
-        setTimeout(() => {
-            btn.style.borderColor = '';
-            btn.style.color = '';
-        }, 600);
-
-        updateUI();
-    });
-
-    // ===== SIDEBAR TOGGLE =====
-    const sidebar = document.getElementById('sidebar-panel-u1v2');
-    function toggleSidebar() {
-        sidebar.classList.toggle('collapsed');
-    }
-    document.getElementById('sidebar-toggle-m4r1').addEventListener('click', toggleSidebar);
-    document.getElementById('sidebar-toggle-desktop-q7r8').addEventListener('click', toggleSidebar);
-    document.getElementById('sidebar-close-w3x4').addEventListener('click', () => { sidebar.classList.add('collapsed'); });
-
-    // ===== WINDOW RESIZE =====
-    window.addEventListener('resize', () => {
-        if (state.ready) resizeVizCanvas();
-    });
-
-    // Build EQ on load (for when stems are visible)
-    buildEQSliders();
-
-    </script>
+  }
+
+  document.getElementById('progressSection').classList.add('hidden');
+  document.getElementById('stemsSection').classList.remove('hidden');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function setProgress(pct) {
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function showError(msg) {
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorSection').classList.remove('hidden');
+  document.getElementById('progressSection').classList.add('hidden');
+}
+
+function resetUI() {
+  selectedFile = null;
+  currentJobId = null;
+  if (pollInterval) clearInterval(pollInterval);
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileInfo').classList.add('hidden');
+  document.getElementById('progressSection').classList.add('hidden');
+  document.getElementById('stemsSection').classList.add('hidden');
+  document.getElementById('errorSection').classList.add('hidden');
+  document.getElementById('separateBtn').disabled = false;
+  setProgress(0);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+checkBackend();
+</script>
 </body>
 </html>
