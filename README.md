@@ -62,7 +62,8 @@ STEMBeats/
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.11 or 3.12 (CI targets; the current pydub version uses audioop,
+  which was removed from Python 3.13)
 - ffmpeg installed on your system
 - 4GB+ RAM (for ML model inference)
 
@@ -79,6 +80,20 @@ cd STEMBeats
 cd backend
 pip install -r requirements.txt
 ```
+
+### Run the smoke tests
+
+From the repository root, after installing dependencies and FFmpeg:
+
+```bash
+cd backend
+python -m unittest discover -s tests -v
+```
+
+These tests exercise Flask startup, routes, rate limiting, job handling, and
+real MP3 encoding. Demucs inference is mocked: passing CI does not certify model
+downloads, full audio separation, or hosting memory capacity. See
+[the deployment investigation and Copilot handoff](docs/deployment-investigation.md).
 
 ### 3. Run the Backend Server
 
